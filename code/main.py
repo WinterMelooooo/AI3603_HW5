@@ -9,6 +9,9 @@ torch.backends.cudnn.benchmark = True
 
 
 path = '../data/bodies/cats_crop'
+#path = '../data/faces'
+#results_folder = './resultsCAT'
+results_folder = './resultsCATBODY'
 IMG_SIZE = 64             # Size of images, do not change this if you do not know why you need to change
 batch_size = 16
 train_num_steps = 30000        # total training steps
@@ -43,17 +46,17 @@ trainer = Trainer(
     gradient_accumulate_every = grad_steps,
     ema_decay = ema_decay,
     save_and_sample_every = 1000,
-    results_folder="./resultsCATBODY"
+    results_folder = results_folder
 )
 
 print(trainer.device)
 
 # Train
-trainer.train()
+#trainer.train()
 
-ckpt = './resultsCATBODY/model-30.pt'
+ckpt = f"{results_folder}/model-30.pt"
 trainer.load(ckpt)
 # Random generation
-trainer.inference(output_path="./submission")
+# trainer.inference(output_path=f"{results_folder}/submission")
 # Fusion generation
-trainer.inference2(lamda=0.5,index1=9000,index2=8888,output_path="./fusion",source_path='./source', data_dir=path)
+trainer.inference2(lamda=0.5,index1=9000,index2=8888,output_path=f"{results_folder}/fusion",source_path='{results_folder}/source', data_dir=path)

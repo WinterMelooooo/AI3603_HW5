@@ -8,6 +8,7 @@ from einops import rearrange, reduce, repeat
 from einops.layers.torch import Rearrange
 from PIL import Image
 from tqdm.auto import tqdm
+from torchvision.transforms import Resize
 
 
 ## The forward process functions (Noise scheduler)
@@ -474,6 +475,7 @@ class GaussianDiffusion(nn.Module):
 
         self.normalize = normalize_to_neg_one_to_one if auto_normalize else identity
         self.unnormalize = unnormalize_to_zero_to_one if auto_normalize else identity
+        self.resize = Resize((224, 224))
 
     def predict_start_from_noise(self, x_t, t, noise):
         return extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
@@ -551,8 +553,8 @@ class GaussianDiffusion(nn.Module):
     def sample2(self, batch_size=16, lamda=0.5, index1=1, index2=2, return_all_timesteps=False, data_dir = None):
         image_size, channels = self.image_size, self.channels
         sample_fn = self.p_sample_loop2
-        img1 = Image.open(f'{data_dir}/cat_{index1:05d}.jpg')
-        img2 = Image.open(f'{data_dir}/cat_{index2:05d}.jpg')
+        img1 = self.resize(Image.open(f'{data_dir}/cat_{index1:05d}.jpg'))
+        img2 = self.resize(Image.open(f'{data_dir}/cat_{index2:05d}.jpg'))
         img1 = T.ToTensor()(img1)
         img2 = T.ToTensor()(img2)
         return sample_fn((batch_size, channels, image_size, image_size), img1.unsqueeze(0), img2.unsqueeze(0), lamda, return_all_timesteps=return_all_timesteps)

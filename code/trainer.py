@@ -16,6 +16,7 @@ from PIL import Image
 from accelerate import Accelerator
 import os
 import glob
+from torchvision.transforms import Resize
 
 
 ##utils
@@ -56,13 +57,14 @@ class Dataset(Dataset):
         ## Optional: Data Augmentation ##
         #################################
         self.transform = T.Compose([T.Resize(image_size), T.ToTensor()])
+        self.resize = Resize([224,224])
 
     def __len__(self):
         return len(self.paths)
 
     def __getitem__(self, index):
         path = self.paths[index]
-        img = Image.open(path)
+        img = self.resize(Image.open(path))
         return self.transform(img)
 
 
