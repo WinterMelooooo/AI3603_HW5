@@ -245,14 +245,14 @@ class Trainer(object):
                 for j in range(all_images.size(0)):
                     torchvision.utils.save_image(all_images[j], f'{output_path}/{i * 10 + j + 1}.jpg')
 
-    def inference2(self, num=1, n_iter=1, lamda=0.5, index1=1, index2=2, output_path='./fusion', source_path='./source'):
+    def inference2(self, num=1, n_iter=1, lamda=0.5, index1=1, index2=2, output_path='./fusion', source_path='./source', data_dir = None):
         """comments:"""
         if not os.path.exists(output_path):
             os.mkdir(output_path)
         with torch.no_grad():
             batches = num_to_groups(num // n_iter, 1)
-            all_images = list(map(lambda n: self.ema.ema_model.sample2(batch_size=n, lamda=lamda, index1=index1, index2=index2), batches))[0]
+            all_images = list(map(lambda n: self.ema.ema_model.sample2(batch_size=n, lamda=lamda, index1=index1, index2=index2, data_dir=data_dir), batches))[0]
             torchvision.utils.save_image(all_images, f'{output_path}/{index1}_{index2}.jpg')
             os.makedirs(source_path, exist_ok=True)
-            shutil.copy(f'../data/faces/cat_{index1:05d}.jpg', source_path)
-            shutil.copy(f'../data/faces/cat_{index2:05d}.jpg', source_path)
+            shutil.copy(f'{data_dir}/cat_{index1:05d}.jpg', source_path)
+            shutil.copy(f'{data_dir}/cat_{index2:05d}.jpg', source_path)

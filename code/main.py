@@ -8,7 +8,7 @@ torch.backends.cudnn.benchmark = True
 #   torch.cuda.manual_seed(4096)
 
 
-path = '../data/faces/'
+path = '../data/bodies/cats_crop'
 IMG_SIZE = 64             # Size of images, do not change this if you do not know why you need to change
 batch_size = 16
 train_num_steps = 30000        # total training steps
@@ -43,7 +43,7 @@ trainer = Trainer(
     gradient_accumulate_every = grad_steps,
     ema_decay = ema_decay,
     save_and_sample_every = 1000,
-    results_folder="./resultsCAT"
+    results_folder="./resultsCATBODY"
 )
 
 print(trainer.device)
@@ -51,9 +51,9 @@ print(trainer.device)
 # Train
 trainer.train()
 
-ckpt = './resultsCAT/model-30.pt'
+ckpt = './resultsCATBODY/model-30.pt'
 trainer.load(ckpt)
 # Random generation
 trainer.inference(output_path="./submission")
 # Fusion generation
-trainer.inference2(lamda=0.5,index1=9000,index2=8888,output_path="./fusion",source_path='./source')
+trainer.inference2(lamda=0.5,index1=9000,index2=8888,output_path="./fusion",source_path='./source', data_dir=path)

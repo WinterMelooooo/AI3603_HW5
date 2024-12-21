@@ -548,11 +548,11 @@ class GaussianDiffusion(nn.Module):
         sample_fn = self.p_sample_loop
         return sample_fn((batch_size, channels, image_size, image_size), return_all_timesteps=return_all_timesteps)
 
-    def sample2(self, batch_size=16, lamda=0.5, index1=1, index2=2, return_all_timesteps=False):
+    def sample2(self, batch_size=16, lamda=0.5, index1=1, index2=2, return_all_timesteps=False, data_dir = None):
         image_size, channels = self.image_size, self.channels
         sample_fn = self.p_sample_loop2
-        img1 = Image.open(f'../data/faces/cat_{index1:05d}.jpg')
-        img2 = Image.open(f'../data/faces/cat_{index2:05d}.jpg')
+        img1 = Image.open(f'{data_dir}/cat_{index1:05d}.jpg')
+        img2 = Image.open(f'{data_dir}/cat_{index2:05d}.jpg')
         img1 = T.ToTensor()(img1)
         img2 = T.ToTensor()(img2)
         return sample_fn((batch_size, channels, image_size, image_size), img1.unsqueeze(0), img2.unsqueeze(0), lamda, return_all_timesteps=return_all_timesteps)
