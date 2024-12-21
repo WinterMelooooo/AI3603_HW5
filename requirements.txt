@@ -1,0 +1,8 @@
+torch
+torchvision
+einops
+transformers
+ema_pytorch
+accelerate
+pillow
+tqdm
