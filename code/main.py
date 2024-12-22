@@ -90,7 +90,7 @@ trainer = Trainer(
 )
 
 print(trainer.device)
-trainer.load("/home/yktang/AI3603_HW5/code/resultsCAT/LargeChannel_MedianDimMults_LargeBatchSize_LongEpoch/2024_12_22_14_19_32/model-12.pt")
+#trainer.load("/home/yktang/AI3603_HW5/code/resultsCAT/LargeChannel_MedianDimMults_LargeBatchSize_LongEpoch/2024_12_22_14_19_32/model-12.pt")
 # Train
 trainer.train()
 
