@@ -17,6 +17,7 @@ from accelerate import Accelerator
 import os
 import glob
 from torchvision.transforms import Resize
+from torch.utils.tensorboard import SummaryWriter
 
 
 ##utils
@@ -89,13 +90,16 @@ class Trainer(object):
         results_folder='./resultsCAT',
         split_batches=True,
         inception_block_idx=2048,
+        tsboard_frq=20,
+        timestamp = None
     ):
         super().__init__()
 
         # accelerator
 
         self.accelerator = Accelerator(split_batches=split_batches, mixed_precision='no')
-
+        self.tsboard_frq = tsboard_frq
+        self.timestamp = timestamp
         # model
 
         self.model = diffusion_model
@@ -133,7 +137,10 @@ class Trainer(object):
 
         self.results_folder = Path(results_folder)
         self.results_folder.mkdir(exist_ok=True)
-
+        self.chkpt_folder = os.path.join(results_folder, "checkpoints")
+        os.makedirs(self.chkpt_folder, exist_ok=True)
+        self.output_img_folder = os.path.join(results_folder, "output_images")
+        os.makedirs(self.output_img_folder, exist_ok=True)
         # step counter state
 
         self.step = 0
@@ -142,6 +149,7 @@ class Trainer(object):
 
         self.model, self.opt = self.accelerator.prepare(self.model, self.opt)
 
+        self.writer = SummaryWriter(log_dir=os.path.join(results_folder,"runs"))
     @property
     def device(self):
         return self.accelerator.device
@@ -158,7 +166,7 @@ class Trainer(object):
             'scaler': self.accelerator.scaler.state_dict() if exists(self.accelerator.scaler) else None,
         }
 
-        torch.save(data, str(self.results_folder / f'model-{milestone}.pt'))
+        torch.save(data, os.path.join(self.chkpt_folder, f'model-{milestone}.pt'))
 
     def load(self, ckpt):
         accelerator = self.accelerator
@@ -201,8 +209,9 @@ class Trainer(object):
                     self.accelerator.backward(loss)
 
                 accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
-                pbar.set_description(f'loss: {total_loss:.4f}')
-
+                pbar.set_description(f'loss_{self.timestamp}: {total_loss:.4f}')
+                #if self.step % self.tsboard_frq == 0:
+                self.writer.add_scalar('Loss/train', total_loss, self.step)
                 # region
                 """comments:"""
                 accelerator.wait_for_everyone()
@@ -228,7 +237,7 @@ class Trainer(object):
 
                         all_images = torch.cat(all_images_list, dim=0)
 
-                        utils.save_image(all_images, str(self.results_folder / f'sample-{milestone}.png'), nrow=int(math.sqrt(self.num_samples)))
+                        utils.save_image(all_images, os.path.join(self.output_img_folder, f'sample-{milestone}.png'), nrow=int(math.sqrt(self.num_samples)))
 
                         self.save(milestone)
 

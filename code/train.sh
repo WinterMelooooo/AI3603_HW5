@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=3 python main.py
+CUDA_VISIBLE_DEVICES=5 python main.py --comment "LargeChannel_MedianDimMults_LargeBatchSize_LongEpoch" --channels 128 --dim_mults 1 2 4 --batch_size 64 --train_num_steps 40000
