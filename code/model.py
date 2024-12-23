@@ -490,7 +490,13 @@ class GaussianDiffusion(nn.Module):
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
     def model_predictions(self, x, t, clip_x_start=False, rederive_pred_noise=False):
-        """comments:"""
+        """
+        It generates the predicted noise and estimates the original image from the current noisy input, 
+        allows the model to predict the noise added to the original image in the training process, 
+        which is then used to compute the loss against the actual noise.   
+        Meanwhile, during image generation, it helps in estimating the original image from the noisy version at each timestep, 
+        facilitating the gradual denoising process to generate high-quality samples.
+        """
         model_output = self.model(x, t)
         maybe_clip = partial(torch.clamp, min=-1.0, max=1.0) if clip_x_start else identity
 
@@ -514,7 +520,11 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def p_sample(self, x, t: int):
-        """comments:"""
+        """
+        It performs a single denoising step to produce the next image in the reverse diffusion process.
+        During the sampling phase, it is repeatedly called to iteratively denoise an image starting from pure noise. 
+        Each call advances the image one step closer to the final generated sample. 
+        """
         b, *_, device = *x.shape, x.device
         batched_times = torch.full((b,), t, device=x.device, dtype=torch.long)
         model_mean, _, model_log_variance, x_start = self.p_mean_variance(x=x, t=batched_times, clip_denoised=True)
@@ -524,7 +534,11 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def p_sample_loop(self, shape, return_all_timesteps=False):
-        """comments:"""
+        """
+        It iteratively applies denoising steps to generate a complete image sample from pure noise.
+        p_sample_loop is primarily used during the sampling phase rather than training. 
+        It automates the process of generating a new image by iteratively applying denoising steps from pure noise to a coherent image. 
+        """
         batch, device = shape[0], self.betas.device
 
         img = torch.randn(shape, device=device)
@@ -560,7 +574,10 @@ class GaussianDiffusion(nn.Module):
         return sample_fn((batch_size, channels, image_size, image_size), img1.unsqueeze(0), img2.unsqueeze(0), lamda, return_all_timesteps=return_all_timesteps)
 
     def p_sample_loop2(self, shape, img1, img2, lamda, return_all_timesteps=False):
-        """comments:"""
+        """
+        It combines two images with a mixing factor and iteratively denoises the blended image to generate a new sample.
+        By incorporating img1 and img2 with a mixing parameter lamda, this function generates new image out of mixed features.
+        """
         batch, device = shape[0], self.betas.device
 
         def q_sample(x_start, t, noise=None):
@@ -594,13 +611,22 @@ class GaussianDiffusion(nn.Module):
         return F.mse_loss
 
     def q_sample(self, x_start, t, noise=None):
-        """comments:"""
+        """
+        Adds noise to the original image at a specific timestep in the forward diffusion process.
+        During training, the model learns to reverse the diffusion process by predicting the added noise. 
+        The q_sample function facilitates this by generating the noisy version of the original image at a given timestep t. 
+        This noisy image x_t serves as the input to the model, and the model's task is to predict the noise that was added. 
+        """
         noise = default(noise, lambda: torch.randn_like(x_start))
 
         return extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start + extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
 
     def p_losses(self, x_start, t, noise=None):
-        """comments:"""
+        """
+        Calculates the mean squared error loss between the model's predicted noise and the actual noise added to the images.
+        The p_losses function computes the MSE loss between the model's predicted noise and the actual noise added to the images, 
+        provides a measure for the optimizer to step. 
+        """
         b, c, h, w = x_start.shape
         noise = default(noise, lambda: torch.randn_like(x_start))
 
@@ -619,7 +645,13 @@ class GaussianDiffusion(nn.Module):
         return loss.mean()
 
     def forward(self, img, *args, **kwargs):
-        """comments:"""
+        """
+        Entrance to the model, adds noise to input images at random timesteps 
+        and computes the loss between the model's predicted noise and the actual noise.
+        It performs perform the forward diffusion process by randomly selecting timesteps, 
+        adding the corresponding noise to the input images, 
+        and calculating the loss. 
+        """
         (b, c, h, w, device, img_size) = (*img.shape, img.device, self.image_size)
         assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()

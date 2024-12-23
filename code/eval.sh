@@ -1,3 +1,5 @@
 RESULT_DIR="/home/yktang/AI3603_HW5/code/resultsCAT/LargeChannel_MedianDimMults_LargeBatchSize_LongEpoch/2024_12_22_16_21_47"
 DATASET_DIR="/home/yktang/AI3603_HW5/data/faces"
-pytorch-fid "${RESULT_DIR}/submission" "${DATASET_DIR}" > "${RESULT_DIR}/eval.txt"
+#pytorch-fid "${RESULT_DIR}/submission" "${DATASET_DIR}" > "${RESULT_DIR}/eval_task2.txt"
+python resizer.py --src_folder "${RESULT_DIR}/source" 
+pytorch-fid "${RESULT_DIR}/fusion" "${RESULT_DIR}/source" --batch-size 1 > "${RESULT_DIR}/eval_task3.txt"

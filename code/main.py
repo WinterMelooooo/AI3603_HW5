@@ -4,6 +4,7 @@ import torch
 from datetime import datetime
 import os
 import argparse
+import random
 torch.backends.cudnn.benchmark = True
 # torch.manual_seed(4096)
 
@@ -24,8 +25,21 @@ def get_parser():
     parser.add_argument('--dim_mults', type=int, nargs='+', default=(1, 2, 4), help='model size')
     parser.add_argument('--timesteps', type=int, default=1000, help='number of steps')
     parser.add_argument('--beta_schedule', type=str, default='linear', help='beta schedule')
+    parser.add_argument('--is_continue', default=False, action="store_true", help='If set, indicates continuing from a previous run.')
+    parser.add_argument('--from_timestamp', default='', type=str, help='The timestamp of the run to be used in case of continuing from a previous run.')
+    parser.add_argument('--dataset_idx_range', type=int, nargs='+', default=(1, 29681), help='dataset index range')
+    parser.add_argument('--n_fusion_pairs', type=int, default=50, help='number of fusion pairs')
     opt = parser.parse_args()
     return opt
+
+def get_max_chpt(path):
+    max_chpt = 0
+    for file in os.listdir(path):
+        if file.startswith('model-'):
+            chpt = int(file.split('-')[1].split('.')[0])
+            if chpt > max_chpt:
+                max_chpt = chpt
+    return os.path.join(f"model-{max_chpt}.pt")
 
 opt = get_parser()
 Comment = opt.comment
@@ -45,6 +59,8 @@ channels = opt.channels             # Numbers of channels of the first layer of 
 dim_mults = opt.dim_mults        # The model size will be (channels, 2 * channels, 4 * channels, 4 * channels, 2 * channels, channels)
 timesteps = opt.timesteps         # Number of steps (adding noise)
 beta_schedule = opt.beta_schedule       # Beta schedule
+dataset_idx_start, dataset_idx_end = opt.dataset_idx_range
+n_fusion_pairs = opt.n_fusion_pairs
 
 super_params = {
     'Comment': Comment,
@@ -92,11 +108,17 @@ trainer = Trainer(
 print(trainer.device)
 #trainer.load("/home/yktang/AI3603_HW5/code/resultsCAT/LargeChannel_MedianDimMults_LargeBatchSize_LongEpoch/2024_12_22_14_19_32/model-12.pt")
 # Train
-trainer.train()
+#trainer.train()
 
-ckpt = f"{trainer.chkpt_folder}/model-30.pt"
+ckpt = "/home/yktang/AI3603_HW5/code/resultsCAT/LargeChannel_MedianDimMults_LargeBatchSize_LongEpoch/2024_12_22_16_21_47/checkpoints/model-40.pt"
 trainer.load(ckpt)
+print(f"loaded model from: {ckpt}")
 # Random generation
-trainer.inference(output_path=f"{results_folder}/submission")
+# trainer.inference(output_path=f"{results_folder}/submission")
 # Fusion generation
-trainer.inference2(lamda=0.5,index1=9000,index2=8888,output_path=f"{results_folder}/fusion",source_path=f'{results_folder}/source', data_dir=path)
+for i in range(n_fusion_pairs):
+    index1 = random.randint(dataset_idx_start, dataset_idx_end)
+    index2 = index1
+    while index2 == index1:
+        index2 = random.randint(dataset_idx_start, dataset_idx_end)
+    trainer.inference2(lamda=0.5,index1=index1,index2=index2,output_path=f"{results_folder}/fusion",source_path=f'{results_folder}/source', data_dir=path)
